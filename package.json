@@ -584,6 +584,21 @@
           "default": true,
           "description": "Enable inlay hints in the editor"
         },
+        "abl.inlayHints.readMainBlock": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable inlay hints on .p call by reading main block in rcode"
+        },
+        "abl.inlayHints.showOnlyConstants": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable inlay hints only for constants in calls"
+        },
+        "abl.inlayHints.nameLengthToShow": {
+          "type": "integer",
+          "default": 2,
+          "description": "Parameter name length under which inlay hints are showing"
+        },
         "abl.formatter.keepIfThenInOneLine": {
           "type": "boolean",
           "default": true,
