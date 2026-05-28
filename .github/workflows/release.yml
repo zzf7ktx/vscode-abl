@@ -88,7 +88,7 @@ jobs:
       - name: Validate release tag
         run: |
           TAG="${{ steps.release_tag.outputs.tag }}"
-          if [[ ! "$TAG" =~ ^v[0-9].* ]]; then
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
             echo "Invalid release tag: $TAG"
             exit 1
           fi
