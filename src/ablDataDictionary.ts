@@ -21,7 +21,7 @@ export function openDataDictionary(project: OpenEdgeProjectConfig) {
     returnValue: '',
     super: false,
     output: [],
-    procedures: project.procedures,
+    procedures: currProfile?.procedures ?? [],
     procedure: '_dict.p',
   };
   fs.writeFileSync(prmFileName, JSON.stringify(cfgFile));
