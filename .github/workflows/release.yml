@@ -100,14 +100,6 @@ jobs:
           tar xfz resources/jre-linux.tar.gz && mv jdk-21.0.11+10-jre jre
           npx @vscode/vsce package ${{ steps.pre_release.outputs.flag }} --target linux-x64
 
-      - name: Publish to VS Code Marketplace
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: |
-          for vsix in *.vsix; do
-            npx @vscode/vsce publish --packagePath "$vsix"
-          done
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
