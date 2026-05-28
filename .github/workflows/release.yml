@@ -1,0 +1,110 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Download LSP bootstrap JAR
+        env:
+          MAVEN_REPO_URL: ${{ secrets.MAVEN_REPO_URL }}
+          MAVEN_REPO_USER: ${{ secrets.MAVEN_REPO_USER }}
+          MAVEN_REPO_PASSWORD: ${{ secrets.MAVEN_REPO_PASSWORD }}
+        run: |
+          ABLS_VERSION="1.25.0"
+          if [ -n "$MAVEN_REPO_URL" ]; then
+            mkdir -p "$HOME/.m2"
+            printf '%s\n' \
+              '<settings>' \
+              '  <servers>' \
+              '    <server>' \
+              '      <id>rssw</id>' \
+              "      <username>${MAVEN_REPO_USER}</username>" \
+              "      <password>${MAVEN_REPO_PASSWORD}</password>" \
+              '    </server>' \
+              '  </servers>' \
+              '</settings>' > "$HOME/.m2/settings.xml"
+            mvn -U -B -ntp dependency:get \
+              -Dartifact=eu.rssw.proparse:abl-lsp-bootstrap:${ABLS_VERSION} \
+              -Dtransitive=false \
+              -DremoteRepositories="rssw::::${MAVEN_REPO_URL}"
+            cp "$HOME/.m2/repository/eu/rssw/proparse/abl-lsp-bootstrap/${ABLS_VERSION}/abl-lsp-bootstrap-${ABLS_VERSION}.jar" resources/abl-lsda.jar
+          else
+            echo "MAVEN_REPO_URL secret not set — skipping LSP bootstrap JAR download"
+          fi
+
+      - name: Download JRE bundles
+        run: |
+          JDK_VERSION="jdk-21.0.11%2B10"
+          BASE_URL="https://github.com/adoptium/temurin21-binaries/releases/download/${JDK_VERSION}"
+          curl -s -L -o resources/jre-windows.zip "${BASE_URL}/OpenJDK21U-jre_x64_windows_hotspot_21.0.11_10.zip"
+          curl -s -L -o resources/jre-linux.tar.gz "${BASE_URL}/OpenJDK21U-jre_x64_linux_hotspot_21.0.11_10.tar.gz"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Copy grammar files
+        run: |
+          cp node_modules/abl-tmlanguage/abl.tmLanguage.json resources/abl.tmLanguage.json
+          npm run grammar-version
+
+      - name: Determine pre-release
+        id: pre_release
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [[ "$TAG" == *"-alpha"* || "$TAG" == *"-beta"* || "$TAG" == *"-rc"* || "$TAG" == *"-pre"* ]]; then
+            echo "flag=--pre-release" >> "$GITHUB_OUTPUT"
+            echo "is_pre_release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "flag=" >> "$GITHUB_OUTPUT"
+            echo "is_pre_release=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Package extension
+        run: |
+          npx @vscode/vsce package ${{ steps.pre_release.outputs.flag }}
+          unzip -q resources/jre-windows.zip && mv jdk-21.0.11+10-jre jre
+          npx @vscode/vsce package ${{ steps.pre_release.outputs.flag }} --target win32-x64
+          rm -rf jre/
+          tar xfz resources/jre-linux.tar.gz && mv jdk-21.0.11+10-jre jre
+          npx @vscode/vsce package ${{ steps.pre_release.outputs.flag }} --target linux-x64
+
+      - name: Publish to VS Code Marketplace
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          for vsix in *.vsix; do
+            npx @vscode/vsce publish --packagePath "$vsix"
+          done
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: '*.vsix'
+          prerelease: ${{ steps.pre_release.outputs.is_pre_release }}
+          generate_release_notes: true
