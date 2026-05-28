@@ -33,17 +33,16 @@ jobs:
           ABLS_VERSION="1.25.0"
           if [ -n "$MAVEN_REPO_URL" ]; then
             mkdir -p "$HOME/.m2"
-            cat > "$HOME/.m2/settings.xml" <<EOF
-            <settings>
-              <servers>
-                <server>
-                  <id>rssw</id>
-                  <username>${MAVEN_REPO_USER}</username>
-                  <password>${MAVEN_REPO_PASSWORD}</password>
-                </server>
-              </servers>
-            </settings>
-            EOF
+            printf '%s\n' \
+              '<settings>' \
+              '  <servers>' \
+              '    <server>' \
+              '      <id>rssw</id>' \
+              "      <username>${MAVEN_REPO_USER}</username>" \
+              "      <password>${MAVEN_REPO_PASSWORD}</password>" \
+              '    </server>' \
+              '  </servers>' \
+              '</settings>' > "$HOME/.m2/settings.xml"
             mvn -U -B -ntp dependency:get \
               -Dartifact=eu.rssw.proparse:abl-lsp-bootstrap:${ABLS_VERSION} \
               -Dtransitive=false \
