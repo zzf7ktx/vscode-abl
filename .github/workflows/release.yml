@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v1.2.3)'
+        required: true
+        type: string
 
 jobs:
   release:
@@ -76,7 +82,7 @@ jobs:
       - name: Determine pre-release
         id: pre_release
         run: |
-          TAG="${{ github.ref_name }}"
+          TAG="${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}"
           if [[ "$TAG" == *"-alpha"* || "$TAG" == *"-beta"* || "$TAG" == *"-rc"* || "$TAG" == *"-pre"* ]]; then
             echo "flag=--pre-release" >> "$GITHUB_OUTPUT"
             echo "is_pre_release=true" >> "$GITHUB_OUTPUT"
