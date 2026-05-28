@@ -42,7 +42,7 @@ export function runGUI(filename: string, project: OpenEdgeProjectConfig) {
     returnValue: '',
     super: true,
     output: [],
-    procedures: project.procedures,
+    procedures: currProfile.procedures ?? [],
     procedure: filename,
   };
   fs.writeFileSync(prmFileName, JSON.stringify(cfgFile));

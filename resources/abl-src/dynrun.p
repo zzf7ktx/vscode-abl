@@ -110,16 +110,23 @@ IF (configJson:has("procedures")) THEN DO:
       ASSIGN yy = procEntry:getCharacter("mode").
       IF (yy EQ "once") THEN DO:
         LOG-MANAGER:WRITE-MESSAGE(SUBSTITUTE("RunOnce '&1'", procEntry:getCharacter("name"))).
-        RUN VALUE(procEntry:getCharacter("name")).
+        RUN VALUE(procEntry:getCharacter("name")) NO-ERROR.
+        IF ERROR-STATUS:ERROR THEN
+          LOG-MANAGER:WRITE-MESSAGE(SUBSTITUTE("Error in RunOnce '&1': &2", procEntry:getCharacter("name"), ERROR-STATUS:GET-MESSAGE(1))).
       END.
       ELSE IF (yy EQ "persistent") THEN DO:
         LOG-MANAGER:WRITE-MESSAGE(SUBSTITUTE("RunPersistent '&1'", procEntry:getCharacter("name"))).
-        RUN VALUE(procEntry:getCharacter("name")) PERSISTENT.
+        RUN VALUE(procEntry:getCharacter("name")) PERSISTENT NO-ERROR.
+        IF ERROR-STATUS:ERROR THEN
+          LOG-MANAGER:WRITE-MESSAGE(SUBSTITUTE("Error in RunPersistent '&1': &2", procEntry:getCharacter("name"), ERROR-STATUS:GET-MESSAGE(1))).
       END.
       ELSE DO:
         LOG-MANAGER:WRITE-MESSAGE(SUBSTITUTE("RunSuper '&1'", procEntry:getCharacter("name"))).
-        RUN VALUE(procEntry:getCharacter("name")) PERSISTENT SET ww.
-        SESSION:ADD-SUPER-PROCEDURE(ww).
+        RUN VALUE(procEntry:getCharacter("name")) PERSISTENT SET ww NO-ERROR.
+        IF ERROR-STATUS:ERROR THEN
+          LOG-MANAGER:WRITE-MESSAGE(SUBSTITUTE("Error in RunSuper '&1': &2", procEntry:getCharacter("name"), ERROR-STATUS:GET-MESSAGE(1))).
+        ELSE
+          SESSION:ADD-SUPER-PROCEDURE(ww).
       END.
     END.
   END.
