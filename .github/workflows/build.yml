@@ -1,0 +1,105 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Download LSP bootstrap JAR
+        env:
+          MAVEN_REPO_URL: ${{ secrets.MAVEN_REPO_URL }}
+          MAVEN_REPO_USER: ${{ secrets.MAVEN_REPO_USER }}
+          MAVEN_REPO_PASSWORD: ${{ secrets.MAVEN_REPO_PASSWORD }}
+        run: |
+          ABLS_VERSION="1.25.0"
+          if [ -n "$MAVEN_REPO_URL" ]; then
+            mkdir -p "$HOME/.m2"
+            cat > "$HOME/.m2/settings.xml" <<EOF
+            <settings>
+              <servers>
+                <server>
+                  <id>rssw</id>
+                  <username>${MAVEN_REPO_USER}</username>
+                  <password>${MAVEN_REPO_PASSWORD}</password>
+                </server>
+              </servers>
+            </settings>
+            EOF
+            mvn -U -B -ntp dependency:get \
+              -Dartifact=eu.rssw.proparse:abl-lsp-bootstrap:${ABLS_VERSION} \
+              -Dtransitive=false \
+              -DremoteRepositories="rssw::::${MAVEN_REPO_URL}"
+            cp "$HOME/.m2/repository/eu/rssw/proparse/abl-lsp-bootstrap/${ABLS_VERSION}/abl-lsp-bootstrap-${ABLS_VERSION}.jar" resources/abl-lsda.jar
+          else
+            echo "MAVEN_REPO_URL secret not set — skipping LSP bootstrap JAR download"
+          fi
+
+      - name: Download JRE bundles
+        run: |
+          JDK_VERSION="jdk-21.0.11%2B10"
+          BASE_URL="https://github.com/adoptium/temurin21-binaries/releases/download/${JDK_VERSION}"
+          curl -s -L -o resources/jre-windows.zip "${BASE_URL}/OpenJDK21U-jre_x64_windows_hotspot_21.0.11_10.zip"
+          curl -s -L -o resources/jre-linux.tar.gz "${BASE_URL}/OpenJDK21U-jre_x64_linux_hotspot_21.0.11_10.tar.gz"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Copy grammar files
+        run: |
+          cp node_modules/abl-tmlanguage/abl.tmLanguage.json resources/abl.tmLanguage.json
+          npm run grammar-version
+
+      - name: Package extension (pre-release)
+        if: github.ref == 'refs/heads/develop'
+        run: |
+          npx @vscode/vsce package --pre-release
+          unzip -q resources/jre-windows.zip && mv jdk-21.0.11+10-jre jre
+          npx @vscode/vsce package --pre-release --target win32-x64
+          rm -rf jre/
+          tar xfz resources/jre-linux.tar.gz && mv jdk-21.0.11+10-jre jre
+          npx @vscode/vsce package --pre-release --target linux-x64
+
+      - name: Package extension (release)
+        if: github.ref != 'refs/heads/develop'
+        run: |
+          npx @vscode/vsce package
+          unzip -q resources/jre-windows.zip && mv jdk-21.0.11+10-jre jre
+          npx @vscode/vsce package --target win32-x64
+          rm -rf jre/
+          tar xfz resources/jre-linux.tar.gz && mv jdk-21.0.11+10-jre jre
+          npx @vscode/vsce package --target linux-x64
+
+      - name: Upload VSIX artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: vsix-packages
+          path: '*.vsix'
+          if-no-files-found: warn
