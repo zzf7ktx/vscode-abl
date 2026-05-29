@@ -588,8 +588,10 @@ function compileBuffer() {
       buffer: vscode.window.activeTextEditor.document.getText(),
     })
     .then((result) => {
-      if (result.success === false) {
-        vscode.window.showErrorMessage('Compile buffer failed');
+      if (!result || result.success === false) {
+        vscode.window.showErrorMessage(
+          'Compile buffer failed' + (result?.message ? ': ' + result.message : ''),
+        );
       } else {
         vscode.window.showInformationMessage('Syntax is correct');
       }
@@ -1649,7 +1651,7 @@ function parseOpenEdgeProjectConfig(
 
 function parseOpenEdgeConfig(cfg: OpenEdgeConfig): ProfileConfig {
   const retVal = new ProfileConfig();
-  retVal.extraParameters = cfg.extraParameters;
+  retVal.extraParameters = cfg.extraParameters ?? '';
   retVal.oeversion = cfg.oeversion;
   retVal.gui = cfg.graphicalMode;
   if (cfg.buildPath)

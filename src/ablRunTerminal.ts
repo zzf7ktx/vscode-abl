@@ -12,10 +12,10 @@ const builderExists: { [rootDir: string]: boolean } = {};
 
 function checkBuilderDirectoryExists(rootDir: string) {
   if (!builderExists[rootDir]) {
-    const builderDir = path.join(rootDir, '.builder');
-    if (!fs.existsSync(builderDir)) {
+    const tmpDir = path.join(rootDir, '.builder', 'tmp');
+    if (!fs.existsSync(tmpDir)) {
       //only check once.  restart the language server to check again
-      fs.mkdirSync(builderDir);
+      fs.mkdirSync(tmpDir, { recursive: true });
     }
     builderExists[rootDir] = true;
   }
@@ -40,7 +40,7 @@ export function runTTY(filename: string, project: OpenEdgeProjectConfig) {
   const cfgFile = {
     verbose: false,
     databases: sanitizeDbConnections(currProfile.dbConnections),
-    propath: currProfile.propath,
+    propath: currProfile.propath ?? [],
     parameters: [],
     returnValue: '',
     super: true,
@@ -87,7 +87,7 @@ export function runBatch(filename: string, project: OpenEdgeProjectConfig) {
   const cfgFile = {
     verbose: false,
     databases: sanitizeDbConnections(currProfile.dbConnections),
-    propath: currProfile.propath,
+    propath: currProfile.propath ?? [],
     parameters: [],
     returnValue: '',
     super: true,

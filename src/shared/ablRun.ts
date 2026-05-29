@@ -4,7 +4,7 @@ import * as cp from 'node:child_process';
 import * as crypto from 'node:crypto';
 import * as vscode from 'vscode';
 import { ProfileConfig, OpenEdgeProjectConfig } from './openEdgeConfigFile';
-import { sanitizeDbConnections, sanitizeProcedures } from './jsonConfigUtils';
+import { sanitizeDbConnections, sanitizeProcedures, splitExtraParameters } from './jsonConfigUtils';
 import { tmpdir } from 'node:os';
 import { outputChannel } from '../ablStatus';
 
@@ -39,7 +39,7 @@ export function runGUI(filename: string, project: OpenEdgeProjectConfig) {
   const cfgFile = {
     verbose: false,
     databases: sanitizeDbConnections(currProfile.dbConnections),
-    propath: currProfile.propath,
+    propath: currProfile.propath ?? [],
     parameters: [],
     returnValue: '',
     super: true,
@@ -59,7 +59,7 @@ export function runGUI(filename: string, project: OpenEdgeProjectConfig) {
     '-ininame',
     path.join(__dirname, '../resources/abl-src/empty.ini'),
   ];
-  const prms2 = prms.concat(currProfile.extraParameters.split(' '));
+  const prms2 = prms.concat(splitExtraParameters(currProfile.extraParameters));
 
   outputChannel.info(
     `Run with prowin - Command line: ${currProfile.getExecutable(true)} ${prms2.join(' ')}`,
@@ -88,7 +88,7 @@ export function openInAB(
   const cfgFile = {
     verbose: false,
     databases: sanitizeDbConnections(project.dbConnections),
-    propath: project.propath,
+    propath: project.propath ?? [],
     parameters: [{ name: 'window', value: filename }],
     returnValue: '',
     super: true,
@@ -110,7 +110,7 @@ export function openInAB(
     '-ininame',
     path.join(__dirname, '../resources/abl-src/empty.ini'),
   ];
-  const prms2 = prms.concat(project.extraParameters.split(' '));
+  const prms2 = prms.concat(splitExtraParameters(project.extraParameters));
 
   outputChannel.info(
     `Open in AppBuilder - Command line: ${project.getExecutable(true)} ${prms2.join(' ')}`,
@@ -139,7 +139,7 @@ export function openInProcEditor(
   const cfgFile = {
     verbose: false,
     databases: sanitizeDbConnections(project.dbConnections),
-    propath: project.propath,
+    propath: project.propath ?? [],
     parameters: [{ name: 'procedure', value: filename }],
     returnValue: '',
     super: true,
@@ -161,7 +161,7 @@ export function openInProcEditor(
     '-ininame',
     path.join(__dirname, '../resources/abl-src/empty.ini'),
   ];
-  const prms2 = prms.concat(project.extraParameters.split(' '));
+  const prms2 = prms.concat(splitExtraParameters(project.extraParameters));
 
   outputChannel.info(
     `Open in procedure editor - Command line: ${project.getExecutable(true)} ${prms2.join(' ')}`,
