@@ -588,20 +588,24 @@ function compileBuffer() {
     cfg = getProjectByName(defaultProjectName);
   }
 
-  const requestParams: any = {
+  interface CompileBufferRequest {
+    bufferUri: string;
+    buffer: string;
+    projectUri?: string;
+  }
+
+  const requestParams: CompileBufferRequest = {
     bufferUri: fileUri.toString(),
     buffer: vscode.window.activeTextEditor.document.getText(),
+    ...(cfg && { projectUri: cfg.rootDir }),
   };
-  if (cfg) {
-    requestParams.projectUri = cfg.rootDir;
-  }
 
   client
     .sendRequest<any>('proparse/compileBuffer', requestParams)
     .then((result) => {
       if (!result || result.success === false) {
         vscode.window.showErrorMessage(
-          'Syntax errors found in file' + (result?.message ? ': ' + result.message : ''),
+          `Syntax errors found in file${result?.message ? ': ' + result.message : ''}`,
         );
       } else {
         vscode.window.showInformationMessage('Syntax is correct');
