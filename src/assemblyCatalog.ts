@@ -8,9 +8,16 @@ import { outputChannel } from './ablStatus';
 import * as vscode from 'vscode';
 
 export function executeGenCatalog(project: OpenEdgeProjectConfig) {
-  const env = process.env;
-  env.DLC = project.dlc;
+  const currProfile = project.profiles.get(project.activeProfile);
+  if (!currProfile) {
+    vscode.window.showErrorMessage('No active profile found.');
+    return;
+  }
 
+  const env = process.env;
+  env.DLC = currProfile.dlc;
+
+  outputChannel.info(`executeGenCatalog - profile: ${project.activeProfile}, DLC: ${currProfile.dlc}`);
   const prmFileName = path.join(
     tmpdir(),
     'catalog-' + crypto.randomBytes(16).toString('hex') + '.json',
@@ -29,10 +36,11 @@ export function executeGenCatalog(project: OpenEdgeProjectConfig) {
     returnValue: '',
     super: false,
     output: [],
-    procedures: project.procedures,
+    procedures: currProfile.procedures ?? [],
     procedure: 'NetAssemblyCatalog.p',
   };
   fs.writeFileSync(prmFileName, JSON.stringify(cfgFile));
+  outputChannel.info(`executeGenCatalog - param file: ${prmFileName}, procedures: ${cfgFile.procedures.length}`);
   const prms = [
     '-clientlog',
     path.join(project.rootDir, '.builder/assemblyCatalog.log'),

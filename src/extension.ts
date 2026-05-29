@@ -1607,6 +1607,7 @@ function parseOpenEdgeProjectConfig(
       }
       p.dlc = getDlcDirectory(p.oeversion);
       prjConfig.profiles.set(profile.name, p);
+      outputChannel.info(`Loaded profile '${profile.name}' (inherits: ${profile.inherits ?? 'none'}, DLC: ${p.dlc})`);
     });
   }
 
@@ -1622,14 +1623,17 @@ function parseOpenEdgeProjectConfig(
       const actProf = txt['profile'];
       if (prjConfig.profiles.has(actProf)) {
         prjConfig.activeProfile = actProf;
+        outputChannel.info(`Active profile set to '${actProf}' (from profile.json)`);
       } else {
+        outputChannel.warn(`Profile '${actProf}' from profile.json not found in project profiles, falling back to 'default'`);
         prjConfig.activeProfile = 'default';
       }
     } catch (error) {
-      console.error('Error parsing profile.json:', error);
+      outputChannel.error(`Error parsing profile.json: ${error}`);
       prjConfig.activeProfile = 'default';
     }
   } else {
+    outputChannel.info(`No profile.json found, using 'default' profile`);
     prjConfig.activeProfile = 'default';
   }
   return prjConfig;
