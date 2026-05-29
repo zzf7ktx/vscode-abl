@@ -4,6 +4,7 @@ import * as cp from 'node:child_process';
 import * as crypto from 'node:crypto';
 import * as vscode from 'vscode';
 import { ProfileConfig, OpenEdgeProjectConfig } from './openEdgeConfigFile';
+import { sanitizeDbConnections, sanitizeProcedures } from './jsonConfigUtils';
 import { tmpdir } from 'node:os';
 import { outputChannel } from '../ablStatus';
 
@@ -37,16 +38,16 @@ export function runGUI(filename: string, project: OpenEdgeProjectConfig) {
   );
   const cfgFile = {
     verbose: false,
-    databases: currProfile.dbConnections,
+    databases: sanitizeDbConnections(currProfile.dbConnections),
     propath: currProfile.propath,
     parameters: [],
     returnValue: '',
     super: true,
     output: [],
-    procedures: currProfile.procedures ?? [],
+    procedures: sanitizeProcedures(currProfile.procedures),
     procedure: filename,
   };
-  fs.writeFileSync(prmFileName, JSON.stringify(cfgFile));
+  fs.writeFileSync(prmFileName, JSON.stringify(cfgFile, null, 2));
   outputChannel.info(`runGUI - param file: ${prmFileName}, procedures: ${cfgFile.procedures.length}`);
   const prms = [
     '-p',
@@ -86,16 +87,16 @@ export function openInAB(
   );
   const cfgFile = {
     verbose: false,
-    databases: project.dbConnections,
+    databases: sanitizeDbConnections(project.dbConnections),
     propath: project.propath,
     parameters: [{ name: 'window', value: filename }],
     returnValue: '',
     super: true,
     output: [],
-    procedures: project.procedures,
+    procedures: sanitizeProcedures(project.procedures),
     procedure: path.join(__dirname, '../resources/abl-src/openInAB.p'),
   };
-  fs.writeFileSync(prmFileName, JSON.stringify(cfgFile));
+  fs.writeFileSync(prmFileName, JSON.stringify(cfgFile, null, 2));
   outputChannel.info(`openInAB - param file: ${prmFileName}, procedures: ${(cfgFile.procedures ?? []).length}`);
   const prms = [
     '-clientlog',
@@ -137,16 +138,16 @@ export function openInProcEditor(
   );
   const cfgFile = {
     verbose: false,
-    databases: project.dbConnections,
+    databases: sanitizeDbConnections(project.dbConnections),
     propath: project.propath,
     parameters: [{ name: 'procedure', value: filename }],
     returnValue: '',
     super: true,
     output: [],
-    procedures: project.procedures,
+    procedures: sanitizeProcedures(project.procedures),
     procedure: path.join(__dirname, '../resources/abl-src/openInProcEditor.p'),
   };
-  fs.writeFileSync(prmFileName, JSON.stringify(cfgFile));
+  fs.writeFileSync(prmFileName, JSON.stringify(cfgFile, null, 2));
   outputChannel.info(`openInProcEditor - param file: ${prmFileName}, procedures: ${(cfgFile.procedures ?? []).length}`);
   const prms = [
     '-clientlog',

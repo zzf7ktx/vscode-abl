@@ -3,6 +3,7 @@ import * as cp from 'node:child_process';
 import * as path from 'node:path';
 import * as crypto from 'node:crypto';
 import { OpenEdgeProjectConfig } from './shared/openEdgeConfigFile';
+import { sanitizeDbConnections, sanitizeProcedures, splitExtraParameters } from './shared/jsonConfigUtils';
 import { tmpdir } from 'node:os';
 import { outputChannel } from './ablStatus';
 import * as vscode from 'vscode';
@@ -22,16 +23,16 @@ export function openDataDictionary(project: OpenEdgeProjectConfig) {
   );
   const cfgFile = {
     verbose: false,
-    databases: currProfile.dbConnections,
-    propath: [],
-    parameters: [],
+    databases: sanitizeDbConnections(currProfile.dbConnections),
+    propath: [] as string[],
+    parameters: [] as Array<{ name: string; value: string }>,
     returnValue: '',
     super: false,
-    output: [],
-    procedures: currProfile?.procedures ?? [],
+    output: [] as string[],
+    procedures: sanitizeProcedures(currProfile.procedures),
     procedure: '_dict.p',
   };
-  fs.writeFileSync(prmFileName, JSON.stringify(cfgFile));
+  fs.writeFileSync(prmFileName, JSON.stringify(cfgFile, null, 2));
   outputChannel.info(`openDataDictionary - param file: ${prmFileName}, procedures: ${cfgFile.procedures.length}`);
   const prms = [
     '-clientlog',
@@ -45,7 +46,7 @@ export function openDataDictionary(project: OpenEdgeProjectConfig) {
     '-ininame',
     path.join(__dirname, '../resources/abl-src/empty.ini'),
   ];
-  const args = currProfile.extraParameters.split(' ').concat(prms);
+  const args = splitExtraParameters(currProfile.extraParameters).concat(prms);
   outputChannel.info(`openDataDictionary - command: ${currProfile.getExecutable(true)} ${args.join(' ')}`);
 
   cp.spawn(

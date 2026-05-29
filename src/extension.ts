@@ -577,6 +577,11 @@ function switchProfile(project: OpenEdgeProjectConfig): void {
 function compileBuffer() {
   if (vscode.window.activeTextEditor == undefined) return;
 
+  if (!client || !client.isRunning()) {
+    vscode.window.showWarningMessage('ABL Language Server is not running. Please wait for it to start or restart it.');
+    return;
+  }
+
   client
     .sendRequest<any>('proparse/compileBuffer', {
       bufferUri: vscode.window.activeTextEditor.document.uri.toString(),
