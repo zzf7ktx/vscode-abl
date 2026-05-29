@@ -8,6 +8,12 @@ import { outputChannel } from './ablStatus';
 import * as vscode from 'vscode';
 
 export function executeGenCatalog(project: OpenEdgeProjectConfig) {
+  const currProfile = project.profiles.get(project.activeProfile);
+  if (!currProfile) {
+    vscode.window.showErrorMessage('No active profile found.');
+    return;
+  }
+
   const env = process.env;
   env.DLC = project.dlc;
 
@@ -29,7 +35,7 @@ export function executeGenCatalog(project: OpenEdgeProjectConfig) {
     returnValue: '',
     super: false,
     output: [],
-    procedures: project.procedures,
+    procedures: currProfile.procedures ?? [],
     procedure: 'NetAssemblyCatalog.p',
   };
   fs.writeFileSync(prmFileName, JSON.stringify(cfgFile));
