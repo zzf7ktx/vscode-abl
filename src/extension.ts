@@ -588,6 +588,9 @@ function compileBuffer() {
       } else {
         vscode.window.showInformationMessage('Syntax is correct');
       }
+    })
+    .catch((err) => {
+      vscode.window.showErrorMessage('Compile buffer failed: ' + (err?.message ?? String(err)));
     });
 }
 

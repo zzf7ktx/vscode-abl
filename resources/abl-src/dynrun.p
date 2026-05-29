@@ -47,7 +47,6 @@ DEFINE VARIABLE ww  AS HANDLE      NO-UNDO.
 ASSIGN jsonParser = NEW ObjectModelParser().
 ASSIGN configJson = CAST(jsonParser:ParseFile(SESSION:PARAMETER), JsonObject).
 LOG-MANAGER:WRITE-MESSAGE(SUBSTITUTE("JSON Config file: &1", SESSION:PARAMETER)).
-OS-DELETE VALUE(SESSION:PARAMETER).
 
 //DB connections + aliases
 IF configJson:has("databases") THEN
@@ -135,12 +134,14 @@ END.
 // Execute procedure
 log-manager:write-message(substitute("RUN &1", configJson:getCharacter("procedure"))).
 run value(configJson:getCharacter("procedure")).
+OS-DELETE VALUE(SESSION:PARAMETER).
 quit.
 
 catch err as Progress.Lang.Error:
   &IF ({&MAJOR} GE 12) OR (({&MAJOR} EQ 11 ) AND ({&MINOR} EQ 7) AND ({&PATCH} GE 3)) &THEN
   session:exit-code = 1.
   &ENDIF
+  OS-DELETE VALUE(SESSION:PARAMETER).
   message "Unexpected error(s):".
   do zz = 1 to err:NumMessages:
     message substitute(" &1", err:getMessage(zz)).
