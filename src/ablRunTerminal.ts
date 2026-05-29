@@ -3,7 +3,7 @@ import * as fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
-import { batchOutputChannel } from './ablStatus';
+import { batchOutputChannel, outputChannel } from './ablStatus';
 import { create } from './OutputChannelProcess';
 import { OpenEdgeProjectConfig } from './shared/openEdgeConfigFile';
 
@@ -27,6 +27,7 @@ export function runTTY(filename: string, project: OpenEdgeProjectConfig) {
     vscode.window.showErrorMessage('No active profile found.');
     return;
   }
+  outputChannel.info(`runTTY - file: ${filename}, profile: ${project.activeProfile}, DLC: ${currProfile.dlc}`);
   const terminal = vscode.window.createTerminal({
     name: 'TTY execution',
     env: { DLC: currProfile.dlc },
@@ -47,6 +48,7 @@ export function runTTY(filename: string, project: OpenEdgeProjectConfig) {
     procedure: filename,
   };
   fs.writeFileSync(prmFileName, JSON.stringify(cfgFile));
+  outputChannel.info(`runTTY - param file: ${prmFileName}, procedures: ${cfgFile.procedures.length}`);
 
   // prettier-ignore
   const cmd =
@@ -61,6 +63,7 @@ export function runTTY(filename: string, project: OpenEdgeProjectConfig) {
                 "-T", path.join(project.rootDir, ".builder", "tmp")
             ])
             .join(" ");
+  outputChannel.info(`runTTY - command: ${cmd}`);
   terminal.sendText(cmd.replaceAll('\\', '/'), true);
   terminal.show();
 }
@@ -72,6 +75,7 @@ export function runBatch(filename: string, project: OpenEdgeProjectConfig) {
     vscode.window.showErrorMessage('No active profile found.');
     return;
   }
+  outputChannel.info(`runBatch - file: ${filename}, profile: ${project.activeProfile}, DLC: ${currProfile.dlc}`);
 
   const env = process.env;
   env.DLC = currProfile.dlc;
@@ -92,19 +96,22 @@ export function runBatch(filename: string, project: OpenEdgeProjectConfig) {
     procedure: filename,
   };
   fs.writeFileSync(prmFileName, JSON.stringify(cfgFile));
+  outputChannel.info(`runBatch - param file: ${prmFileName}, procedures: ${cfgFile.procedures.length}`);
 
   // prettier-ignore
+  const args = currProfile.extraParameters
+        .split(" ")
+        .concat([
+            "-b",
+            "-clientlog", path.join(project.rootDir, ".builder", "runbatch.log"),
+            "-p", path.join(__dirname, "../resources/abl-src/dynrun.p"),
+            "-param", prmFileName,
+            "-T", path.join(project.rootDir, ".builder", "tmp")
+        ]);
+  outputChannel.info(`runBatch - command: ${currProfile.getTTYExecutable()} ${args.join(' ')}`);
   create(
         currProfile.getTTYExecutable(),
-        currProfile.extraParameters
-            .split(" ")
-            .concat([
-                "-b",
-                "-clientlog", path.join(project.rootDir, ".builder", "runbatch.log"),
-                "-p", path.join(__dirname, "../resources/abl-src/dynrun.p"),
-                "-param", prmFileName,
-                "-T", path.join(project.rootDir, ".builder", "tmp")
-            ]),
+        args,
         { env: env, cwd: project.rootDir, detached: true },
         batchOutputChannel
     );

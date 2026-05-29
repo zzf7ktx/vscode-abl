@@ -27,6 +27,7 @@ export function runGUI(filename: string, project: OpenEdgeProjectConfig) {
     vscode.window.showErrorMessage('No active profile found.');
     return;
   }
+  outputChannel.info(`runGUI - file: ${filename}, profile: ${project.activeProfile}, DLC: ${currProfile.dlc}`);
   const env = process.env;
   env.DLC = currProfile.dlc;
 
@@ -46,9 +47,8 @@ export function runGUI(filename: string, project: OpenEdgeProjectConfig) {
     procedure: filename,
   };
   fs.writeFileSync(prmFileName, JSON.stringify(cfgFile));
+  outputChannel.info(`runGUI - param file: ${prmFileName}, procedures: ${cfgFile.procedures.length}`);
   const prms = [
-    '-clientlog',
-    path.join(project.rootDir, '.builder\\rungui.log'),
     '-p',
     path.join(__dirname, '../resources/abl-src/dynrun.p'),
     '-param',
@@ -76,6 +76,7 @@ export function openInAB(
   project: ProfileConfig,
 ) {
   checkBuilderDirectoryExists(rootDir);
+  outputChannel.info(`openInAB - file: ${filename}, DLC: ${project.dlc}`);
   const env = process.env;
   env.DLC = project.dlc;
 
@@ -95,6 +96,7 @@ export function openInAB(
     procedure: path.join(__dirname, '../resources/abl-src/openInAB.p'),
   };
   fs.writeFileSync(prmFileName, JSON.stringify(cfgFile));
+  outputChannel.info(`openInAB - param file: ${prmFileName}, procedures: ${(cfgFile.procedures ?? []).length}`);
   const prms = [
     '-clientlog',
     path.join(rootDir, '.builder\\openInAB.log'),
@@ -125,6 +127,7 @@ export function openInProcEditor(
   project: ProfileConfig,
 ) {
   checkBuilderDirectoryExists(rootDir);
+  outputChannel.info(`openInProcEditor - file: ${filename}, DLC: ${project.dlc}`);
   const env = process.env;
   env.DLC = project.dlc;
 
@@ -144,6 +147,7 @@ export function openInProcEditor(
     procedure: path.join(__dirname, '../resources/abl-src/openInProcEditor.p'),
   };
   fs.writeFileSync(prmFileName, JSON.stringify(cfgFile));
+  outputChannel.info(`openInProcEditor - param file: ${prmFileName}, procedures: ${(cfgFile.procedures ?? []).length}`);
   const prms = [
     '-clientlog',
     path.join(rootDir, '.builder\\openInProcEd.log'),
