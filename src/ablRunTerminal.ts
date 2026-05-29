@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 import { batchOutputChannel, outputChannel } from './ablStatus';
 import { create } from './OutputChannelProcess';
 import { OpenEdgeProjectConfig } from './shared/openEdgeConfigFile';
+import { sanitizeDbConnections, sanitizeProcedures, splitExtraParameters } from './shared/jsonConfigUtils';
 
 const builderExists: { [rootDir: string]: boolean } = {};
 
@@ -38,24 +39,23 @@ export function runTTY(filename: string, project: OpenEdgeProjectConfig) {
   );
   const cfgFile = {
     verbose: false,
-    databases: currProfile.dbConnections,
+    databases: sanitizeDbConnections(currProfile.dbConnections),
     propath: currProfile.propath,
     parameters: [],
     returnValue: '',
     super: true,
     output: [],
-    procedures: currProfile.procedures ?? [],
+    procedures: sanitizeProcedures(currProfile.procedures),
     procedure: filename,
   };
-  fs.writeFileSync(prmFileName, JSON.stringify(cfgFile));
+  fs.writeFileSync(prmFileName, JSON.stringify(cfgFile, null, 2));
   outputChannel.info(`runTTY - param file: ${prmFileName}, procedures: ${cfgFile.procedures.length}`);
 
   // prettier-ignore
   const cmd =
         currProfile.getTTYExecutable() +
         " " +
-        currProfile.extraParameters
-            .split(" ")
+        splitExtraParameters(currProfile.extraParameters)
             .concat([
                 "-clientlog", path.join(project.rootDir, ".builder", "runtty.log"),
                 "-p", path.join(__dirname, "../resources/abl-src/dynrun.p"),
@@ -86,21 +86,20 @@ export function runBatch(filename: string, project: OpenEdgeProjectConfig) {
   );
   const cfgFile = {
     verbose: false,
-    databases: currProfile.dbConnections,
+    databases: sanitizeDbConnections(currProfile.dbConnections),
     propath: currProfile.propath,
     parameters: [],
     returnValue: '',
     super: true,
     output: [],
-    procedures: currProfile.procedures ?? [],
+    procedures: sanitizeProcedures(currProfile.procedures),
     procedure: filename,
   };
-  fs.writeFileSync(prmFileName, JSON.stringify(cfgFile));
+  fs.writeFileSync(prmFileName, JSON.stringify(cfgFile, null, 2));
   outputChannel.info(`runBatch - param file: ${prmFileName}, procedures: ${cfgFile.procedures.length}`);
 
   // prettier-ignore
-  const args = currProfile.extraParameters
-        .split(" ")
+  const args = splitExtraParameters(currProfile.extraParameters)
         .concat([
             "-b",
             "-clientlog", path.join(project.rootDir, ".builder", "runbatch.log"),
