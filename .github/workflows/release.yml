@@ -52,7 +52,8 @@ jobs:
               -DremoteRepositories="rssw::::${MAVEN_REPO_URL}"
             cp "$HOME/.m2/repository/eu/rssw/proparse/abl-lsp-bootstrap/${ABLS_VERSION}/abl-lsp-bootstrap-${ABLS_VERSION}.jar" resources/abl-lsda.jar
           else
-            echo "MAVEN_REPO_URL secret not set — skipping LSP bootstrap JAR download"
+            echo "ERROR: MAVEN_REPO_URL secret not set — cannot download LSP bootstrap JAR for release"
+            exit 1
           fi
 
       - name: Download JRE bundles
