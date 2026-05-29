@@ -582,15 +582,26 @@ function compileBuffer() {
     return;
   }
 
+  const fileUri = vscode.window.activeTextEditor.document.uri;
+  let cfg = getProject(fileUri.fsPath);
+  if (!cfg && defaultProjectName) {
+    cfg = getProjectByName(defaultProjectName);
+  }
+
+  const requestParams: any = {
+    bufferUri: fileUri.toString(),
+    buffer: vscode.window.activeTextEditor.document.getText(),
+  };
+  if (cfg) {
+    requestParams.projectUri = cfg.rootDir;
+  }
+
   client
-    .sendRequest<any>('proparse/compileBuffer', {
-      bufferUri: vscode.window.activeTextEditor.document.uri.toString(),
-      buffer: vscode.window.activeTextEditor.document.getText(),
-    })
+    .sendRequest<any>('proparse/compileBuffer', requestParams)
     .then((result) => {
       if (!result || result.success === false) {
         vscode.window.showErrorMessage(
-          'Compile buffer failed' + (result?.message ? ': ' + result.message : ''),
+          'Syntax errors found in file' + (result?.message ? ': ' + result.message : ''),
         );
       } else {
         vscode.window.showInformationMessage('Syntax is correct');
